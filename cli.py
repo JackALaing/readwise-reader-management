@@ -49,9 +49,11 @@ class ReadwiseCLI:
     def list_documents(self, args) -> None:
         """List documents"""
         try:
+            tags = [args.tag] if args.tag else None
             docs = self.doc_manager.get_documents(
                 location=args.location,
                 category=args.category,
+                tags=tags,
                 limit=args.limit,
                 show_progress=not args.no_progress
             )
@@ -545,7 +547,10 @@ def main():
     list_parser = subparsers.add_parser('list', help='List documents')
     list_parser.add_argument('--location', choices=['new', 'later', 'archive', 'feed'],
                             help='Filter by location')
-    list_parser.add_argument('--category', help='Filter by category')
+    list_parser.add_argument('--category', 
+                            choices=['article', 'book', 'tweet', 'pdf', 'email', 'youtube', 'podcast'],
+                            help='Filter by category')
+    list_parser.add_argument('-t', '--tag', help='Filter by tag name')
     list_parser.add_argument('--limit', type=int, help='Limit count')
     list_parser.add_argument('--format', choices=['text', 'json', 'csv'], default='text',
                             help='Output format')
@@ -719,4 +724,4 @@ def main():
         parser.print_help()
 
 if __name__ == '__main__':
-    main() 
+    main()

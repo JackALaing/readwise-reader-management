@@ -123,6 +123,7 @@ class ReadwiseClient:
     def get_all_documents(self,
                          location: Optional[str] = None,
                          category: Optional[str] = None,
+                         tags: Optional[List[str]] = None,
                          updated_after: Optional[str] = None,
                          delay_seconds: float = 3.0,
                          max_documents: Optional[int] = None,
@@ -131,7 +132,8 @@ class ReadwiseClient:
         
         Args:
             location: Document location filter
-            category: Document category filter  
+            category: Document category filter
+            tags: List of tag names to filter by
             updated_after: Only get documents updated after this date
             delay_seconds: Delay between API calls to respect rate limits (default 3s)
             max_documents: Stop after fetching this many documents (None for all)
@@ -149,6 +151,8 @@ class ReadwiseClient:
                 filter_info.append(f"location={location}")
             if category:
                 filter_info.append(f"category={category}")
+            if tags:
+                filter_info.append(f"tags={','.join(tags)}")
             if updated_after:
                 filter_info.append(f"updated_after={updated_after}")
             if max_documents:
@@ -177,6 +181,7 @@ class ReadwiseClient:
                 response = self.list_documents(
                     location=location,
                     category=category,
+                    tags=tags,
                     updated_after=updated_after,
                     page_cursor=next_page_cursor
                 )
@@ -336,4 +341,4 @@ class ReadwiseClient:
                         continue
                 raise
                 
-        return all_tags 
+        return all_tags

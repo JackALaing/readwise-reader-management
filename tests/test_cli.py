@@ -154,6 +154,7 @@ class TestReadwiseCLI:
         args = Mock()
         args.location = 'new'
         args.category = 'article'
+        args.tag = None
         args.limit = 10
         args.format = 'text'
         args.verbose = False
@@ -169,6 +170,7 @@ class TestReadwiseCLI:
         mock_dependencies['doc_manager'].get_documents.assert_called_once_with(
             location='new',
             category='article',
+            tags=None,
             limit=10,
             show_progress=False  # Include the show_progress parameter
         )

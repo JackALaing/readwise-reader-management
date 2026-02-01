@@ -92,6 +92,7 @@ class DocumentManager:
                 documents = self.client.get_all_documents(
                     location=location,
                     category=category,
+                    tags=tags,
                     max_documents=limit,
                     show_progress=show_progress
                 )
@@ -102,6 +103,7 @@ class DocumentManager:
             documents = self.client.get_all_documents(
                 location=location,
                 category=category,
+                tags=tags,
                 show_progress=show_progress
             )
         
@@ -294,4 +296,4 @@ class DocumentManager:
                 writer.writerow(row)
         
         safe_print(f"Exported {len(documents)} documents to CSV: {filename}")
-        return filename 
+        return filename

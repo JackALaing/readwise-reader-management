@@ -32,31 +32,54 @@ class ReadwiseCLI:
         return True
     
     def add_article(self, args) -> None:
-        """Add article"""
+        """Add article/document"""
         tags = args.tags.split(',') if args.tags else None
-        
+
         try:
-            result = self.doc_manager.add_article(
+            result = self.doc_manager.add_document(
                 url=args.url,
+                html=args.html,
+                should_clean_html=getattr(args, 'clean_html', False),
                 title=args.title,
+                author=args.author,
+                summary=args.summary,
+                published_date=getattr(args, 'published_date', None),
+                image_url=getattr(args, 'image_url', None),
+                location=args.location,
+                category=args.category,
+                saved_using=getattr(args, 'saved_using', None),
                 tags=tags,
-                location=args.location
+                notes=args.notes
             )
-            print(f"Successfully added article: {result.get('url')}")
+            print(f"Successfully added document: {result.get('url')}")
+            print(f"Document ID: {result.get('id')}")
         except Exception as e:
-            print(f"Failed to add article: {e}")
+            print(f"Failed to add document: {e}")
     
     def list_documents(self, args) -> None:
         """List documents"""
         try:
             tags = [args.tag.lower()] if args.tag else None
-            docs = self.doc_manager.get_documents(
-                location=args.location,
-                category=args.category,
-                tags=tags,
-                limit=args.limit,
-                show_progress=not args.no_progress
-            )
+
+            # If fetching by ID, use direct API call
+            if args.id:
+                doc = self.doc_manager.get_document_by_id(args.id)
+                if doc:
+                    docs = [doc]
+                else:
+                    print(f"No document found with ID: {args.id}")
+                    return
+            else:
+                # Note: argparse converts --updated-after to updated_after
+                updated_after = getattr(args, 'updated_after', None)
+                docs = self.doc_manager.get_documents(
+                    location=args.location,
+                    category=args.category,
+                    tags=tags,
+                    updated_after=updated_after,
+                    limit=args.limit,
+                    show_progress=not args.no_progress
+                )
             
             if not docs:
                 print("No documents found matching criteria")
@@ -112,18 +135,25 @@ class ReadwiseCLI:
     def update_document(self, args) -> None:
         """Update document"""
         try:
-            if args.location:
-                result = self.doc_manager.move_document(args.id, args.location)
-                print(f"Document moved to {args.location}")
-            else:
-                result = self.doc_manager.update_document_metadata(
-                    document_id=args.id,
-                    title=args.title,
-                    author=args.author,
-                    summary=args.summary
-                )
-                print("Document metadata updated")
-                
+            # Parse tags if provided
+            tags = args.tags.split(',') if args.tags else None
+
+            # Use the client directly for full parameter support
+            result = self.client.update_document(
+                document_id=args.id,
+                title=args.title,
+                author=args.author,
+                summary=args.summary,
+                published_date=getattr(args, 'published_date', None),
+                image_url=getattr(args, 'image_url', None),
+                location=args.location,
+                category=args.category,
+                seen=args.seen if hasattr(args, 'seen') and args.seen is not None else None,
+                tags=tags,
+                notes=args.notes
+            )
+            print("Document updated successfully")
+
         except Exception as e:
             print(f"Failed to update document: {e}")
     
@@ -534,27 +564,41 @@ def main():
     parser = argparse.ArgumentParser(description="Readwise Reader Management Tool")
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
     
-    # Add article
-    add_parser = subparsers.add_parser('add', help='Add article')
-    add_parser.add_argument('url', help='Article URL')
-    add_parser.add_argument('--title', help='Article title')
-    add_parser.add_argument('--tags', help='Tags, comma separated')
-    add_parser.add_argument('--location', default='new', 
+    # Add article/document
+    add_parser = subparsers.add_parser('add', help='Add document')
+    add_parser.add_argument('url', help='Document URL')
+    add_parser.add_argument('--html', help='HTML content (for non-web content)')
+    add_parser.add_argument('--clean-html', action='store_true',
+                           help='Clean HTML content before saving')
+    add_parser.add_argument('--title', help='Document title')
+    add_parser.add_argument('--author', help='Document author')
+    add_parser.add_argument('--summary', help='Document summary')
+    add_parser.add_argument('--published-date', help='Published date (ISO format)')
+    add_parser.add_argument('--image-url', help='Cover image URL')
+    add_parser.add_argument('--location', default='new',
                            choices=['new', 'later', 'archive', 'feed'],
                            help='Document location')
+    add_parser.add_argument('--category',
+                           choices=['article', 'book', 'tweet', 'pdf', 'email', 'youtube', 'podcast'],
+                           help='Document category')
+    add_parser.add_argument('--saved-using', help='Name of app that saved this document')
+    add_parser.add_argument('--tags', help='Tags, comma separated')
+    add_parser.add_argument('--notes', help='Notes for the document')
     
     # List documents
     list_parser = subparsers.add_parser('list', help='List documents')
+    list_parser.add_argument('--id', help='Get specific document by ID')
     list_parser.add_argument('--location', choices=['new', 'later', 'archive', 'feed'],
                             help='Filter by location')
-    list_parser.add_argument('--category', 
+    list_parser.add_argument('--category',
                             choices=['article', 'book', 'tweet', 'pdf', 'email', 'youtube', 'podcast'],
                             help='Filter by category')
     list_parser.add_argument('-t', '--tag', help='Filter by tag name')
+    list_parser.add_argument('--updated-after', help='Only documents updated after this ISO date (e.g., 2024-01-01T00:00:00Z)')
     list_parser.add_argument('--limit', type=int, help='Limit count')
     list_parser.add_argument('--format', choices=['text', 'json', 'csv'], default='text',
                             help='Output format')
-    list_parser.add_argument('--verbose', '-v', action='store_true', 
+    list_parser.add_argument('--verbose', '-v', action='store_true',
                             help='Show detailed information')
     list_parser.add_argument('--no-progress', action='store_true',
                             help='Disable progress display for large document lists')
@@ -571,8 +615,17 @@ def main():
     update_parser.add_argument('--title', help='New title')
     update_parser.add_argument('--author', help='New author')
     update_parser.add_argument('--summary', help='New summary')
+    update_parser.add_argument('--published-date', help='Published date (ISO format)')
+    update_parser.add_argument('--image-url', help='Cover image URL')
     update_parser.add_argument('--location', choices=['new', 'later', 'archive', 'feed'],
                               help='Move to location')
+    update_parser.add_argument('--category',
+                              choices=['article', 'book', 'tweet', 'pdf', 'email', 'youtube', 'podcast'],
+                              help='Document category')
+    update_parser.add_argument('--seen', type=lambda x: x.lower() == 'true',
+                              help='Mark as seen (true/false)')
+    update_parser.add_argument('--tags', help='Tags (comma-separated)')
+    update_parser.add_argument('--notes', help='Notes for the document')
     
     # Delete document
     delete_parser = subparsers.add_parser('delete', help='Delete document')

@@ -78,100 +78,148 @@ class TestReadwiseCLI:
         assert "Error: API token invalid" in captured.out
     
     def test_add_article(self, mock_dependencies, capsys):
-        """Test adding an article"""
-        mock_dependencies['doc_manager'].add_article.return_value = {
+        """Test adding a document"""
+        mock_dependencies['doc_manager'].add_document.return_value = {
             'id': '12345',
             'url': 'https://example.com'
         }
-        
+
         cli = ReadwiseCLI()
-        
-        # Create mock args
+
+        # Create mock args with all new parameters
         args = Mock()
         args.url = 'https://example.com'
+        args.html = None
+        args.clean_html = False
         args.title = 'Test Article'
-        args.tags = 'python,testing'
+        args.author = None
+        args.summary = None
+        args.published_date = None
+        args.image_url = None
         args.location = 'new'
-        
+        args.category = None
+        args.saved_using = None
+        args.tags = 'python,testing'
+        args.notes = None
+
         cli.add_article(args)
-        
+
         # Verify the call
-        mock_dependencies['doc_manager'].add_article.assert_called_once_with(
+        mock_dependencies['doc_manager'].add_document.assert_called_once_with(
             url='https://example.com',
+            html=None,
+            should_clean_html=False,
             title='Test Article',
+            author=None,
+            summary=None,
+            published_date=None,
+            image_url=None,
+            location='new',
+            category=None,
+            saved_using=None,
             tags=['python', 'testing'],
-            location='new'
+            notes=None
         )
-        
+
         captured = capsys.readouterr()
-        assert "Successfully added article: https://example.com" in captured.out
+        assert "Successfully added document: https://example.com" in captured.out
     
     def test_add_article_no_tags(self, mock_dependencies):
-        """Test adding an article without tags"""
-        mock_dependencies['doc_manager'].add_article.return_value = {
+        """Test adding a document without tags"""
+        mock_dependencies['doc_manager'].add_document.return_value = {
             'id': '12345',
             'url': 'https://example.com'
         }
-        
+
         cli = ReadwiseCLI()
-        
+
         args = Mock()
         args.url = 'https://example.com'
+        args.html = None
+        args.clean_html = False
         args.title = None
-        args.tags = None
+        args.author = None
+        args.summary = None
+        args.published_date = None
+        args.image_url = None
         args.location = 'new'
-        
+        args.category = None
+        args.saved_using = None
+        args.tags = None
+        args.notes = None
+
         cli.add_article(args)
-        
-        mock_dependencies['doc_manager'].add_article.assert_called_once_with(
+
+        mock_dependencies['doc_manager'].add_document.assert_called_once_with(
             url='https://example.com',
+            html=None,
+            should_clean_html=False,
             title=None,
+            author=None,
+            summary=None,
+            published_date=None,
+            image_url=None,
+            location='new',
+            category=None,
+            saved_using=None,
             tags=None,
-            location='new'
+            notes=None
         )
     
     def test_add_article_exception(self, mock_dependencies, capsys):
-        """Test adding article with exception"""
-        mock_dependencies['doc_manager'].add_article.side_effect = Exception('Network error')
-        
+        """Test adding document with exception"""
+        mock_dependencies['doc_manager'].add_document.side_effect = Exception('Network error')
+
         cli = ReadwiseCLI()
-        
+
         args = Mock()
         args.url = 'https://example.com'
+        args.html = None
+        args.clean_html = False
         args.title = None
-        args.tags = None
+        args.author = None
+        args.summary = None
+        args.published_date = None
+        args.image_url = None
         args.location = 'new'
-        
+        args.category = None
+        args.saved_using = None
+        args.tags = None
+        args.notes = None
+
         cli.add_article(args)
-        
+
         captured = capsys.readouterr()
-        assert "Failed to add article: Network error" in captured.out
+        assert "Failed to add document: Network error" in captured.out
     
     def test_list_documents(self, mock_dependencies):
         """Test listing documents"""
         cli = ReadwiseCLI()
-        
+
         args = Mock()
+        args.id = None
         args.location = 'new'
         args.category = 'article'
         args.tag = 'TestTag'  # Mixed case to test normalization
+        args.updated_after = None
         args.limit = 10
         args.format = 'text'
         args.verbose = False
         args.no_progress = True
-        
+
         # Mock the return value to avoid iteration issues
         mock_dependencies['doc_manager'].get_documents.return_value = [
             {'id': '123', 'title': 'Test', 'source_url': 'http://test.com', 'location': 'new', 'updated_at': '2023-01-01'}
         ]
-        
+
         cli.list_documents(args)
-        
+
         # Verify tag is normalized to lowercase
         mock_dependencies['doc_manager'].get_documents.assert_called_once_with(
             location='new',
             category='article',
             tags=['testtag'],  # Should be lowercase
+            updated_after=None,
             limit=10,
             show_progress=False
         )
@@ -213,19 +261,37 @@ class TestReadwiseCLI:
     def test_update_document(self, mock_dependencies):
         """Test updating a document"""
         cli = ReadwiseCLI()
-        
+
         args = Mock()
         args.id = '12345'
-        args.location = 'archive'
-        args.title = None
+        args.title = 'New Title'
         args.author = None
         args.summary = None
-        
-        mock_dependencies['doc_manager'].move_document.return_value = {'status': 'success'}
-        
+        args.published_date = None
+        args.image_url = None
+        args.location = 'archive'
+        args.category = None
+        args.seen = None
+        args.tags = None
+        args.notes = None
+
+        mock_dependencies['client'].update_document.return_value = {'status': 'success'}
+
         cli.update_document(args)
-        
-        mock_dependencies['doc_manager'].move_document.assert_called_once_with('12345', 'archive')
+
+        mock_dependencies['client'].update_document.assert_called_once_with(
+            document_id='12345',
+            title='New Title',
+            author=None,
+            summary=None,
+            published_date=None,
+            image_url=None,
+            location='archive',
+            category=None,
+            seen=None,
+            tags=None,
+            notes=None
+        )
     
     def test_export_documents(self, mock_dependencies):
         """Test exporting documents"""

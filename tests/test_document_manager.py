@@ -38,26 +38,35 @@ class TestDocumentManager:
             'url': 'https://example.com',
             'title': 'Test Article'
         }
-        
+
         result = manager.add_article(
             url='https://example.com',
             title='Test Article',
             tags=['test'],
             location='new'
         )
-        
+
         assert result['id'] == '12345'
+        # add_article now calls add_document which calls save_document with full params
         mock_client.save_document.assert_called_once_with(
             url='https://example.com',
+            html=None,
+            should_clean_html=False,
             title='Test Article',
-            tags=['test'],
+            author=None,
+            summary=None,
+            published_date=None,
+            image_url=None,
             location='new',
-            category='article'
+            category='article',
+            saved_using=None,
+            tags=['test'],
+            notes=None
         )
-        
+
         captured = capsys.readouterr()
-        assert 'Adding article: https://example.com' in captured.out
-        assert 'Article added, ID: 12345' in captured.out
+        assert 'Adding document: https://example.com' in captured.out
+        assert 'Document added, ID: 12345' in captured.out
     
     def test_add_from_html(self, manager, mock_client, capsys):
         """Test adding document from HTML"""
@@ -65,7 +74,7 @@ class TestDocumentManager:
             'id': '12345',
             'title': 'HTML Document'
         }
-        
+
         result = manager.add_from_html(
             url='https://example.com',
             html='<html><body>Content</body></html>',
@@ -74,16 +83,23 @@ class TestDocumentManager:
             tags=['html'],
             clean_html=True
         )
-        
+
         assert result['id'] == '12345'
+        # add_from_html now calls add_document which calls save_document with full params
         mock_client.save_document.assert_called_once_with(
             url='https://example.com',
             html='<html><body>Content</body></html>',
+            should_clean_html=True,
             title='HTML Document',
             author='Test Author',
+            summary=None,
+            published_date=None,
+            image_url=None,
+            location='new',
+            category='article',
+            saved_using=None,
             tags=['html'],
-            should_clean_html=True,
-            category='article'
+            notes=None
         )
     
     def test_list_documents_no_results(self, manager, mock_client, capsys):

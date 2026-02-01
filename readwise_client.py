@@ -87,6 +87,7 @@ class ReadwiseClient:
                       category: Optional[str] = None,
                       tags: Optional[List[str]] = None,
                       with_html_content: bool = False,
+                      with_raw_source_url: bool = False,
                       page_cursor: Optional[str] = None) -> Dict[str, Any]:
         """List documents"""
         
@@ -105,6 +106,8 @@ class ReadwiseClient:
                 params["tag"] = tag  # API supports multiple tag parameters
         if with_html_content:
             params["withHtmlContent"] = "true"
+        if with_raw_source_url:
+            params["withRawSourceUrl"] = "true"
         if page_cursor is not None:
             params["pageCursor"] = page_cursor
             
@@ -242,7 +245,10 @@ class ReadwiseClient:
                        published_date: Optional[str] = None,
                        image_url: Optional[str] = None,
                        location: Optional[str] = None,
-                       category: Optional[str] = None) -> Dict[str, Any]:
+                       category: Optional[str] = None,
+                       seen: Optional[bool] = None,
+                       tags: Optional[List[str]] = None,
+                       notes: Optional[str] = None) -> Dict[str, Any]:
         """Update document"""
         
         data = {}
@@ -261,6 +267,12 @@ class ReadwiseClient:
             data["location"] = location
         if category is not None:
             data["category"] = category
+        if seen is not None:
+            data["seen"] = seen
+        if tags is not None:
+            data["tags"] = tags
+        if notes is not None:
+            data["notes"] = notes
             
         try:
             response = requests.patch(

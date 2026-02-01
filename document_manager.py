@@ -34,26 +34,49 @@ class DocumentManager:
     def __init__(self, client: Optional[ReadwiseClient] = None):
         self.client = client or ReadwiseClient()
         
-    def add_article(self, url: str, title: Optional[str] = None, 
-                   tags: Optional[List[str]] = None, location: str = "new") -> Dict[str, Any]:
-        """Add article"""
-        safe_print(f"Adding article: {url}")
+    def add_document(self, url: str, 
+                    html: Optional[str] = None,
+                    should_clean_html: bool = False,
+                    title: Optional[str] = None,
+                    author: Optional[str] = None,
+                    summary: Optional[str] = None,
+                    published_date: Optional[str] = None,
+                    image_url: Optional[str] = None,
+                    location: str = "new",
+                    category: Optional[str] = None,
+                    saved_using: Optional[str] = None,
+                    tags: Optional[List[str]] = None,
+                    notes: Optional[str] = None) -> Dict[str, Any]:
+        """Add document with full API support"""
+        safe_print(f"Adding document: {url}")
         result = self.client.save_document(
             url=url,
+            html=html,
+            should_clean_html=should_clean_html,
             title=title,
-            tags=tags,
+            author=author,
+            summary=summary,
+            published_date=published_date,
+            image_url=image_url,
             location=location,
-            category="article"
+            category=category,
+            saved_using=saved_using,
+            tags=tags,
+            notes=notes
         )
-        safe_print(f"Article added, ID: {result.get('id')}")
+        safe_print(f"Document added, ID: {result.get('id')}")
         return result
+    
+    def add_article(self, url: str, title: Optional[str] = None, 
+                   tags: Optional[List[str]] = None, location: str = "new") -> Dict[str, Any]:
+        """Add article (convenience method)"""
+        return self.add_document(url=url, title=title, tags=tags, location=location, category="article")
     
     def add_from_html(self, url: str, html: str, title: Optional[str] = None,
                      author: Optional[str] = None, tags: Optional[List[str]] = None,
                      clean_html: bool = True) -> Dict[str, Any]:
         """Add document from HTML content"""
-        safe_print(f"Adding document from HTML: {title or url}")
-        result = self.client.save_document(
+        return self.add_document(
             url=url,
             html=html,
             should_clean_html=clean_html,
@@ -62,18 +85,17 @@ class DocumentManager:
             tags=tags,
             category="article"
         )
-        safe_print(f"Document added, ID: {result.get('id')}")
-        return result
     
-    def get_documents(self, location: Optional[str] = None, 
+    def get_documents(self, location: Optional[str] = None,
                      category: Optional[str] = None,
                      tags: Optional[List[str]] = None,
+                     updated_after: Optional[str] = None,
                      limit: Optional[int] = None,
                      show_progress: bool = True) -> List[Dict[str, Any]]:
         """Get document list"""
         if show_progress:
             safe_print("Getting document list...")
-        
+
         if limit:
             if limit <= 100:
                 # Single API call is enough
@@ -82,7 +104,8 @@ class DocumentManager:
                 response = self.client.list_documents(
                     location=location,
                     category=category,
-                    tags=tags
+                    tags=tags,
+                    updated_after=updated_after
                 )
                 documents = response.get('results', [])[:limit]
             else:
@@ -93,6 +116,7 @@ class DocumentManager:
                     location=location,
                     category=category,
                     tags=tags,
+                    updated_after=updated_after,
                     max_documents=limit,
                     show_progress=show_progress
                 )
@@ -104,6 +128,7 @@ class DocumentManager:
                 location=location,
                 category=category,
                 tags=tags,
+                updated_after=updated_after,
                 show_progress=show_progress
             )
         

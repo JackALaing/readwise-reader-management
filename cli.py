@@ -136,7 +136,14 @@ class ReadwiseCLI:
         """Update document"""
         try:
             # Parse tags if provided
-            tags = args.tags.split(',') if args.tags else None
+            # --tags "" or --tags "clear" clears all tags (sends empty list)
+            # --tags not provided = None (no change to tags)
+            if args.tags is None:
+                tags = None
+            elif args.tags == "" or args.tags.lower() == "clear":
+                tags = []
+            else:
+                tags = [t.strip() for t in args.tags.split(',') if t.strip()]
 
             # Use the client directly for full parameter support
             result = self.client.update_document(

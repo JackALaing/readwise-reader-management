@@ -49,7 +49,7 @@ class ReadwiseCLI:
     def list_documents(self, args) -> None:
         """List documents"""
         try:
-            tags = [args.tag] if args.tag else None
+            tags = [args.tag.lower()] if args.tag else None
             docs = self.doc_manager.get_documents(
                 location=args.location,
                 category=args.category,

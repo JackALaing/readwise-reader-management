@@ -154,11 +154,11 @@ class TestReadwiseCLI:
         args = Mock()
         args.location = 'new'
         args.category = 'article'
-        args.tag = None
+        args.tag = 'TestTag'  # Mixed case to test normalization
         args.limit = 10
         args.format = 'text'
         args.verbose = False
-        args.no_progress = True  # Add missing no_progress attribute
+        args.no_progress = True
         
         # Mock the return value to avoid iteration issues
         mock_dependencies['doc_manager'].get_documents.return_value = [
@@ -167,12 +167,13 @@ class TestReadwiseCLI:
         
         cli.list_documents(args)
         
+        # Verify tag is normalized to lowercase
         mock_dependencies['doc_manager'].get_documents.assert_called_once_with(
             location='new',
             category='article',
-            tags=None,
+            tags=['testtag'],  # Should be lowercase
             limit=10,
-            show_progress=False  # Include the show_progress parameter
+            show_progress=False
         )
     
     def test_search_documents(self, mock_dependencies):
